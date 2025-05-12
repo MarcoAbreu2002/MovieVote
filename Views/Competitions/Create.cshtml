@@ -1,0 +1,321 @@
+﻿@model CineVote.Models.CompetitionCreateViewModel
+
+@{
+    ViewData["Title"] = "Create Competition";
+}
+
+<style>
+    body {
+        background: url('/images/home.jpg') no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .competition-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .movie-description {
+        display: none;
+        margin-top: 10px;
+    }
+
+    .movie-card {
+        transition: all 0.3s ease-in-out;
+    }
+
+    .movie-card:hover {
+        transform: scale(1.02);
+    }
+
+    #selectedMovies {
+        gap: 10px;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 6px;
+        background-color: #f9f9f9;
+        margin-bottom: 20px;
+    }
+
+    .selected-movie {
+        position: relative;
+        display: inline-block;
+    }
+
+    .selected-movie img {
+        height: 60px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+
+    .selected-movie .remove-btn {
+        display: none;
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: red;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 14px;
+        line-height: 20px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .selected-movie:hover .remove-btn {
+        display: block;
+    }
+</style>
+
+<div class="competition-container">
+    <h2 class="mb-4">Create Competition</h2>
+
+    <!-- Search Form -->
+    <form asp-action="SearchMovies" method="post" class="mb-4 d-flex gap-2" id="searchForm" onsubmit="searchMovies(event)">
+        <input asp-for="MovieSearchQuery" id="movieSearchInput" class="form-control" placeholder="Search movie by name..." />
+        <button type="submit" class="btn btn-primary">Search</button>
+        <button type="button" class="btn btn-outline-secondary" onclick="clearSearch()">Clear</button>
+    </form>
+
+
+    <!-- Competition Form -->
+    <form asp-action="CreateCompetition" method="post" id="createCompetitionForm">
+        <div class="mb-3">
+            <label asp-for="Title" class="form-label"></label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Category" class="form-label"></label>
+            <input asp-for="Category" class="form-control" />
+            <span asp-validation-for="Category" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="StartTime" class="form-label"></label>
+            <input asp-for="StartTime" type="datetime-local" class="form-control" />
+            <span asp-validation-for="StartTime" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="EndTime" class="form-label"></label>
+            <input asp-for="EndTime" type="datetime-local" class="form-control" />
+            <span asp-validation-for="EndTime" class="text-danger"></span>
+        </div>
+
+        <!-- Selected Movies Preview -->
+        <label class="form-label" >Selected Movies</label>
+        <div id="selectedMovies" class="d-flex flex-wrap"></div>
+        <input type="hidden" name="SelectedMovieIdsRaw" id="SelectedMovieIds" value="@Model.SelectedMovieIdsRaw" />
+
+        @if (Model.SearchResults.Any())
+        {
+            <h4 class="mt-4">Select Nominees</h4>
+            <div class="row" id="searchResultsContainer">
+                @foreach (var movie in Model.SearchResults)
+                {
+                    var movieId = movie["Id"];
+                    <div class="col-md-3 mb-4">
+                        <div class="card h-100 movie-card">
+                            <img src="https://image.tmdb.org/t/p/w500/@movie["PosterPath"]" class="card-img-top" alt="@movie["Title"]" />
+                            <div class="card-body">
+                                <h5 class="card-title">@movie["Title"]</h5>
+                                <p class="card-text"><small>@movie["ReleaseDate"]</small></p>
+
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectMovie('@movieId', '@movie["Title"]', 'https://image.tmdb.org/t/p/w200/@movie["PosterPath"]')">
+                                    Select
+                                </button>
+
+                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="toggleDescription('@movieId')">
+                                    See Details
+                                </button>
+
+                                <div id="desc_@movieId" class="movie-description">
+                                    <p>@movie["Overview"]</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <button type="submit" class="btn btn-success mt-3">Create Competition</button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let selectedMovies = {};
+
+        function selectMovie(id, title, posterUrl) {
+            if (selectedMovies[id]) {
+                console.log(`Movie with ID ${id} is already selected.`);
+                return;
+            }
+
+            console.log(`Selecting movie: ID=${id}, Title=${title}`);
+
+            selectedMovies[id] = { id, title, posterUrl };
+
+            const selectedDiv = document.getElementById("selectedMovies");
+            const movieEl = document.createElement("div");
+            movieEl.className = "selected-movie";
+            movieEl.id = "selected_" + id;
+
+            movieEl.innerHTML = `
+                <img src="${posterUrl}" title="${title}" />
+                <button type="button" class="remove-btn" onclick="removeMovie('${id}')">×</button>
+            `;
+
+            selectedDiv.appendChild(movieEl);
+            updateSelectedInput();
+        }
+
+        function removeMovie(id) {
+            console.log(`Removing movie with ID ${id}`);
+            delete selectedMovies[id];
+            const el = document.getElementById("selected_" + id);
+            if (el) el.remove();
+            updateSelectedInput();
+        }
+
+        function updateSelectedInput() {
+            const input = document.getElementById("SelectedMovieIds");
+            const csv = Object.keys(selectedMovies).join(',');
+            input.value = csv;
+            console.log(`Updated hidden input: SelectedMovieIds = "${input.value}"`);
+        }
+
+        function toggleDescription(movieId) {
+            const desc = document.getElementById("desc_" + movieId);
+            if (desc.style.display === "none" || desc.style.display === "") {
+                desc.style.display = "block";
+                console.log(`Showing description for movie ID ${movieId}`);
+            } else {
+                desc.style.display = "none";
+                console.log(`Hiding description for movie ID ${movieId}`);
+            }
+        }
+
+        function clearSearch() {
+            console.log("Clearing search input");
+            document.getElementById('movieSearchInput').value = '';
+                event.preventDefault(); // Prevent the default form submission
+
+    const searchQuery = document.getElementById("movieSearchInput").value;
+    console.log("Search Query: ", searchQuery); // Add this line to verify the value
+
+    // Make an AJAX request to search for movies
+    fetch('/Competitions/SearchMovies', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ MovieSearchQuery: searchQuery }) // Ensure the key matches the one in the model
+    })
+    .then(response => response.json())
+    .then(data => {
+        // If the search is successful, update the movie list
+        updateMovieList(data.searchResults);
+    })
+    .catch(error => console.error('Error:', error));
+        }
+
+        window.onload = function () {
+            const raw = "@Model.SelectedMovieIdsRaw";
+            console.log(`Restoring selection from model: "${raw}"`);
+            const previouslySelected = raw.split(',').filter(x => x);
+            previouslySelected.forEach(id => {
+                const movieData = document.querySelector(`[onclick*="selectMovie('${id}'"]`);
+                if (movieData) {
+                    const args = movieData.getAttribute("onclick").match(/selectMovie\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/);
+                    if (args && args.length === 4) {
+                        console.log(`Restoring movie selection: ID=${args[1]}, Title=${args[2]}`);
+                        selectMovie(args[1], args[2], args[3]);
+                    } else {
+                        console.warn(`Unable to parse selectMovie args for movie ID ${id}`);
+                    }
+                } else {
+                    console.warn(`No movieData element found for ID ${id}`);
+                }
+            });
+
+            // Just before submitting the form, log the hidden input value
+            document.getElementById('createCompetitionForm').addEventListener('submit', function () {
+                console.log('Form submitted');
+                console.log('Final SelectedMovieIds value:', document.getElementById("SelectedMovieIds").value);
+            });
+        }
+
+function searchMovies(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    const searchQuery = document.getElementById("movieSearchInput").value;
+    console.log("Search Query: ", searchQuery); // Add this line to verify the value
+
+    // Make an AJAX request to search for movies
+    fetch('/Competitions/SearchMovies', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ MovieSearchQuery: searchQuery }) // Ensure the key matches the one in the model
+    })
+    .then(response => response.json())
+    .then(data => {
+        // If the search is successful, update the movie list
+        updateMovieList(data.searchResults);
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+// Function to update the movie list dynamically
+function updateMovieList(searchResults) {
+    const movieContainer = document.getElementById("searchResultsContainer"); // Adjust to your actual container ID
+
+    // Clear the existing movie cards
+    movieContainer.innerHTML = '';
+
+    // Loop through the search results and create new movie cards
+    searchResults.forEach(movie => {
+        const movieId = movie["Id"];
+        const movieEl = document.createElement("div");
+        movieEl.className = "col-md-3 mb-4";
+        movieEl.innerHTML = `
+            <div class="card h-100 movie-card">
+                <img src="https://image.tmdb.org/t/p/w500/${movie["PosterPath"]}" class="card-img-top" alt="${movie["Title"]}" />
+                <div class="card-body">
+                    <h5 class="card-title">${movie["Title"]}</h5>
+                    <p class="card-text"><small>${movie["ReleaseDate"]}</small></p>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectMovie('${movieId}', '${movie["Title"]}', 'https://image.tmdb.org/t/p/w200/${movie["PosterPath"]}')">
+                        Select
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="toggleDescription('${movieId}')">
+                        See Details
+                    </button>
+                    <div id="desc_${movieId}" class="movie-description">
+                        <p>${movie["Overview"]}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        movieContainer.appendChild(movieEl);
+    });
+}
+
+
+    </script>
+}
+
+}

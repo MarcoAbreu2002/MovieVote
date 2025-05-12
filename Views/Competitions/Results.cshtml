@@ -1,0 +1,149 @@
+﻿@model ResultsViewModel
+
+@{
+    ViewData["Title"] = "Competition Results";
+}
+
+<style>
+    body {
+        background: url('/images/home.jpg') no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .competition-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .table-container {
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-top: 30px;
+    }
+
+    .podium {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 30px;
+        margin-bottom: 40px;
+    }
+
+    .podium .podium-item {
+        width: 150px;
+        height: 250px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        background-color: #f9f9f9;
+        padding: 20px;
+        text-align: center;
+        position: relative;
+    }
+
+    .podium .podium-item img {
+        max-width: 100%;
+        border-radius: 10px;
+        margin-bottom: 15px;
+    }
+
+    .podium .podium-item .rank {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .podium .podium-item .title {
+        font-size: 1.1rem;
+        margin-top: 5px;
+    }
+
+    .status-badge {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+        border-radius: 20px;
+        color: white;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+
+    .status-ended {
+        background-color: #dc3545;
+    }
+
+    .btn-back {
+        margin-top: 20px;
+    }
+
+    .movie-card {
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+
+    .movie-card:hover {
+        transform: scale(1.02);
+    }
+
+    .movie-card img {
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .card-body {
+        padding: 15px;
+    }
+
+</style>
+
+<div class="competition-container">
+    <h2 class="display-5 fw-bold">Results for @Model.CompetitionTitle</h2>
+
+    <div class="mb-3">
+        <strong>Category:</strong> @Model.Category
+    </div>
+
+    <div class="mb-3">
+        <strong>Start Time:</strong> @Model.StartTime.ToString("f")
+    </div>
+
+    <div class="mb-3">
+        <strong>End Time:</strong> @Model.EndTime.ToString("f")
+    </div>
+
+    @if (!Model.Results.Any())
+    {
+        <p>No results available yet.</p>
+    }
+    else
+    {
+        <div class="podium">
+            @foreach (var result in Model.Results.Take(3))
+            {
+                <div class="podium-item" style="background-color: @(result.Rank == 1 ? "#ffd700" : (result.Rank == 2 ? "#c0c0c0" : "#cd7f32"));">
+                    <img src="https://image.tmdb.org/t/p/w500/@result.MoviePosterPath" alt="Movie Poster" />
+                    <div class="rank">@result.Rank</div>
+                    <div class="title">@result.MovieTitle</div>
+                    <div class="votes">@result.VoteCount votes</div>
+                    <br />
+                </div>
+            }
+        </div>
+    }
+
+    <!-- MOVE THE RETURN BUTTON INSIDE HERE -->
+    <div class="text-center pt-4">
+        <a href="@Url.Action("Index", "Competitions")" class="btn btn-secondary btn-back">Back to Competitions</a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,119 @@
+﻿@model CineVote.Models.VoteViewModel
+
+@{
+    ViewData["Title"] = "Vote in " + Model.Title;
+}
+
+<style>
+    body {
+        background: url('/images/home.jpg') no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .vote-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .movie-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+
+    .movie-card:hover {
+        transform: scale(1.03);
+    }
+
+    .form-check-input {
+        margin-right: 10px;
+    }
+
+    .submit-button {
+        margin-top: 30px;
+    }
+    .movie-radio:checked + .selectable {
+    border: 2px solid #28a745;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+.selectable {
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.selectable:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: scale(1.02);
+}
+
+</style>
+
+<div class="vote-container">
+    <h2 class="mb-4">@Model.Title</h2>
+
+    <div class="mb-3">
+        <strong>Category:</strong> @Model.Category
+    </div>
+
+    <div class="mb-3">
+        <strong>Start Time:</strong> @Model.StartTime.ToString("f")
+    </div>
+
+    <div class="mb-3">
+        <strong>End Time:</strong> @Model.EndTime.ToString("f")
+    </div>
+
+    <h4 class="mt-4">Selected Movies</h4>
+
+    @if (Model.Movies.Any())
+    {
+<form method="post" action="@Url.Action("SubmitVote", "Competitions")">
+    <input type="hidden" name="competitionId" value="@Model.CompetitionId" />
+
+    <div class="row">
+        @for (int i = 0; i < Model.Movies.Count; i++)
+        {
+            var movie = Model.Movies[i];
+            var id = movie.ContainsKey("Id") ? movie["Id"]?.ToString() : "";
+            var title = movie.ContainsKey("Title") ? movie["Title"]?.ToString() : "No Title";
+            var overview = movie.ContainsKey("Overview") ? movie["Overview"]?.ToString() : "";
+            var posterPath = movie.ContainsKey("PosterPath") ? movie["PosterPath"]?.ToString() : "";
+            var releaseDate = movie.ContainsKey("ReleaseDate") ? movie["ReleaseDate"]?.ToString() : "";
+
+            <div class="col-md-3 mb-4">
+                <input type="radio" class="d-none movie-radio" name="selectedMovieId" id="movie_@i" value="@id" />
+                <label for="movie_@i" class="card h-100 movie-card selectable">
+                    <img src="https://image.tmdb.org/t/p/w500/@posterPath" class="card-img-top" alt="@title" />
+                    <div class="card-body">
+                        <h5 class="card-title">@title</h5>
+                        <p class="card-text"><small>@releaseDate</small></p>
+                        <p class="card-text">@overview</p>
+                    </div>
+                </label>
+            </div>
+        }
+    </div>
+
+    <div class="text-center">
+        <button type="submit" class="btn btn-success submit-button">Submit Vote</button>
+    </div>
+</form>
+
+    }
+    else
+    {
+        <p>No movies selected for this competition.</p>
+    }
+
+    <a href="@Url.Action("Index", "Competitions")" class="btn btn-secondary mt-3">Back to Competitions</a>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

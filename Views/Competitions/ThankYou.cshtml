@@ -1,0 +1,26 @@
+﻿@{
+    ViewData["Title"] = "Thank You!";
+}
+
+<style>
+    body {
+        background: url('/images/home.jpg') no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .thank-you-container {
+        max-width: 600px;
+        margin: 100px auto;
+        background-color: white;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        text-align: center;
+    }
+</style>
+
+<div class="thank-you-container">
+    <h1 class="mb-4">Thank You for Voting!</h1>
+    <p>Your vote has been recorded.</p>
+    <a href="@Url.Action("Index", "Competitions")" class="btn btn-success mt-4">Back to Competitions</a>
+</div>

@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<body class="perfil-img text-white text-center">
+
+    <h3 class="display-1 fw-bold">
+        IMMERSE <br /> YOURSELF IN <br /> MOVIE WORLD
+    </h3>
+
+    <p class="display-6">Vote for your favorite nominee</p>
+
+    <div class="perfil-but mt-4">
+        @if (string.IsNullOrEmpty(User.Identity.Name))
+        {
+            <a class="btn text-white btn-lg btn-block" style="background-color: rgb(30,8,55);" asp-controller="Account" asp-action="Register">Starts Now!</a>
+        }
+        else
+        {
+            <a class="btn text-white btn-lg btn-block" style="background-color: rgb(30,8,55);" href="/Competitions">Starts Now!</a>
+        }
+    </div>
+
+</body>

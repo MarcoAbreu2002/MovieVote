@@ -1,0 +1,160 @@
+﻿@model IEnumerable<CineVote.Models.Competition>
+
+@using CineVote.Services
+@inject CompetitionService CompetitionService
+
+@{
+    ViewData["Title"] = "All Competitions";
+    var subscribedIds = ViewBag.SubscribedCompetitionIds as List<int> ?? new List<int>();
+    var votedIds = ViewBag.VotedCompetitionIds as List<int> ?? new List<int>();
+}
+
+<style>
+        body {
+        background: url('/images/home.jpg') no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .competition-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .competition-card {
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease-in-out;
+    }
+
+    .competition-card:hover {
+        transform: scale(1.02);
+    }
+
+    .competition-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    .competition-meta {
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .status-badge {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+        border-radius: 20px;
+        color: white;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+
+    .status-ongoing {
+        background-color: #28a745;
+    }
+
+    .status-upcoming {
+        background-color: #ffc107;
+        color: #212529;
+    }
+
+    .status-ended {
+        background-color: #dc3545;
+    }
+
+    .btn-view, .btn-edit, .btn-delete, .btn-subscribe {
+        margin-right: 10px;
+        margin-top: 10px;
+    }
+</style>
+
+<div class="competition-container">
+    <h2 class="mb-4">All Competitions</h2>
+
+    @if (User.IsInRole("Admin"))
+    {
+        <a href="@Url.Action("Create", "Competitions")" class="btn btn-success mb-4">+ Create New Competition</a>
+    }
+
+    @if (!Model.Any())
+    {
+        <p>No competitions have been created yet.</p>
+    }
+    else
+    {
+        foreach (var competition in Model)
+        {
+            var isSubscribed = subscribedIds.Contains(competition.Id);
+            var hasVoted = votedIds.Contains(competition.Id);
+            var now = DateTime.Now;
+            var isOngoing = competition.StartTime <= now && competition.EndTime >= now;
+            var isUpcoming = competition.StartTime > now;
+            var isEnded = competition.EndTime < now;
+
+            string statusClass = isOngoing ? "status-ongoing" : isUpcoming ? "status-upcoming" : "status-ended";
+            string statusLabel = isOngoing ? "Ongoing" : isUpcoming ? "Upcoming" : "Ended";
+
+            <div class="competition-card">
+                <div class="status-badge @statusClass">@statusLabel</div>
+                <div class="competition-title">@competition.Title</div>
+                <div class="competition-meta">Category: <strong>@competition.Category</strong></div>
+                <div class="competition-meta">Start: @competition.StartTime.ToString("f")</div>
+                <div class="competition-meta">End: @competition.EndTime.ToString("f")</div>
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="btn btn-primary btn-view" href="@Url.Action("Details", "Competitions", new { id = competition.Id })">View Details</a>
+                    <a class="btn btn-warning btn-edit" href="@Url.Action("Edit", "Competitions", new { id = competition.Id })">Edit</a>
+                    <form asp-action="Delete" asp-controller="Competitions" asp-route-id="@competition.Id" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-delete" onclick="return confirm('Are you sure you want to delete this competition?');">Delete</button>
+                    </form>
+                }
+                else if (User.Identity.IsAuthenticated)
+                {
+                    <a class="btn btn-primary btn-view" href="@Url.Action("Details", "Competitions", new { id = competition.Id })">View Details</a>
+
+                    @if (isSubscribed)
+                    {
+                        if (hasVoted)
+                        {
+                            if (isEnded && await CompetitionService.IsCompetitionEndedAsync(competition.Id))
+                            {
+                                <a class="btn btn-info btn-subscribe mt-2" href="@Url.Action("Results", "Competitions", new { id = competition.Id })">View Results</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted d-block mt-2">✅ Already voted, wait for the results</span>
+                            }
+                        }
+                        else if (isOngoing)
+                        {
+                            <a class="btn btn-success btn-subscribe" href="@Url.Action("Vote", "Competitions", new { id = competition.Id })">Vote</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted d-block mt-2">⏳ Waiting for competition to start</span>
+                        }
+                    }
+                    else
+                    {
+                        <form asp-action="Subscribe" asp-controller="Competitions" method="post" style="display:inline;">
+                            <input type="hidden" name="competitionId" value="@competition.Id" />
+                            <button type="submit" class="btn btn-outline-success btn-subscribe">Subscribe</button>
+                        </form>
+                    }
+                }
+                else
+                {
+                    <span class="text-muted">🔒 Login to participate</span>
+                }
+            </div>
+        }
+    }
+</div>
